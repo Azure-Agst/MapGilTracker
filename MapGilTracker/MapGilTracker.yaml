@@ -1,0 +1,17 @@
+name: FATE/Map Gil Tracker
+internal_name: MapGilTracker
+author: Azure-Agst
+punchline: A Plugin to track gil earned from FATEs or Treasure Maps!
+description: |-
+    This plugin aims to simplify gil tracking for FCs who use FATEs/Maps as fundraising events!
+    Simply install it, enable it, and it'll automatically track every chest or sack opened and calculate how much gil each person owes.
+tags:
+- fate
+- treasure
+- maps
+- gil
+- tracker
+category_tags:
+- utility
+applicable_version": any
+repo_url: https://github.com/Azure-Agst/MapGilTracker
