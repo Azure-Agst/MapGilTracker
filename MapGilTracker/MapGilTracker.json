@@ -1,0 +1,13 @@
+{
+  "Author": "Azure-Agst",
+  "Name": "FATE/Map Gil Reward Tracker",
+  "Punchline": "A Plugin to track gil earned from FATEs or Treasure Maps!",
+  "Description": "Long description goes here!",
+  "InternalName": "MapGilTracker",
+  "ApplicableVersion": "any",
+  "Tags": [
+    "sample",
+    "plugin",
+    "goats"
+  ]
+}
