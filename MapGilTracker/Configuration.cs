@@ -1,6 +1,8 @@
+using System;
+using System.Collections.Generic;
 using Dalamud.Configuration;
 using Dalamud.Plugin;
-using System;
+using MapGilTracker.Models;
 
 namespace MapGilTracker
 {
@@ -9,20 +11,13 @@ namespace MapGilTracker
     {
         public int Version { get; set; } = 0;
 
-        public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
+        public bool isTracking { get; set; } = false;
 
-        // the below exist just to make saving less cumbersome
-        [NonSerialized]
-        private DalamudPluginInterface? PluginInterface;
-
-        public void Initialize(DalamudPluginInterface pluginInterface)
-        {
-            this.PluginInterface = pluginInterface;
-        }
+        public List<RewardRecord> rewardList { get; set; } = new List<RewardRecord>();
 
         public void Save()
         {
-            this.PluginInterface!.SavePluginConfig(this);
+            Services.Plugin!.SavePluginConfig(this);
         }
     }
 }

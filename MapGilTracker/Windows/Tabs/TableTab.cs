@@ -22,11 +22,11 @@ namespace MapGilTracker.Windows.Tabs
         public bool Enabled => true;
 
         private MapGilTracker plugin;
-        private List<RewardRecord> rewardList;
+        private RewardRecordKeeper recordKeeper;
 
         public TableTab(MainWindow mainWindow) {
             plugin = mainWindow.plugin;
-            rewardList = mainWindow.plugin.rewardTracker.rewardList;
+            recordKeeper = mainWindow.plugin.rewardTracker;
         }
 
         public void Draw()
@@ -81,7 +81,7 @@ namespace MapGilTracker.Windows.Tabs
             ImGui.TableHeadersRow();
 
             // Populate Table 
-            if (rewardList.Count < 1)
+            if (recordKeeper.rewardList.Count < 1)
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
@@ -93,7 +93,7 @@ namespace MapGilTracker.Windows.Tabs
             }
             else
             {
-                foreach (var entry in rewardList)
+                foreach (var entry in recordKeeper.rewardList)
                 {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
@@ -114,8 +114,8 @@ namespace MapGilTracker.Windows.Tabs
             ImGui.Text("Tracking Status:");
             ImGui.SameLine();
 
-            // IsTracking Button
-            if (plugin.isTracking)
+            // IsTracking Button Style
+            if (plugin.config.isTracking)
             {
                 ImGui.PushStyleColor(ImGuiCol.Button, 0xFF000000 | 0x0000b300);
                 ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0xAA000000 | 0x0000b300);
@@ -126,14 +126,20 @@ namespace MapGilTracker.Windows.Tabs
                 ImGui.PushStyleColor(ImGuiCol.ButtonHovered, 0xAA000000 | 0x000000b3);
             }
 
-            if (ImGui.Button(plugin.isTracking ? "Enabled" : "Disabled"))
+            // IsTracking Button Implementation
+            if (ImGui.Button(plugin.config.isTracking ? "Enabled" : "Disabled"))
             {
-                plugin.isTracking = !plugin.isTracking;
+                plugin.config.isTracking = !plugin.config.isTracking;
+                plugin.config.Save();
             }
-
             ImGui.PopStyleColor(2);
 
-
+            // Other stats
+            ImGui.Text($"# of Tracked Participants: {recordKeeper.userTable.Count}");
+            int totalEarnings = recordKeeper.rewardList.Select(e => e.value).Sum();
+            ImGui.Text($"Total amount earned: {totalEarnings}");
+            int avgEarned = (int)Math.Floor(totalEarnings / (double)recordKeeper.userTable.Count);
+            ImGui.Text($"Avg amount earned: {avgEarned}");
 
         }
     }

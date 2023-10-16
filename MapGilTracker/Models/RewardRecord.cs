@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace MapGilTracker.Models
 {
+    [Serializable]
     public class RewardRecord
     {
         public DateTime timestamp { get; set; }

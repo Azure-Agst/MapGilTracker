@@ -15,6 +15,7 @@ using MapGilTracker.Windows;
 using static Lumina.Data.Parsing.Layer.LayerCommon;
 using MapGilTracker.Tools;
 using Lumina.Excel.GeneratedSheets;
+using System.Reflection;
 
 namespace MapGilTracker
 {
@@ -22,115 +23,115 @@ namespace MapGilTracker
     {
         public string Name => "FATE/Map Gil Tracker";
         public string[] commandAliases = { "/giltracker", "/gt" };
-
-        [PluginService]
-        public static DalamudPluginInterface PluginInterface { get; set; } = null!;
-        [PluginService]
-        public static IPartyList PartyList { get; set; } = null!;
-        [PluginService]
-        public static IClientState ClientState { get; set; } = null!;
-        [PluginService]
-        public static IAddonLifecycle AddonLifecycle { get; set; } = null!;
-        [PluginService]
-        public static ICommandManager CommandManager { get; set; } = null!;
-        [PluginService]
-        public static IToastGui ToastGui { get; set; } = null!;
-        [PluginService]
-        public static IPluginLog PluginLog { get; set; } = null!;
-
-        public RewardRecordKeeper rewardTracker { get; set; } = null!;
-
-
-        private WindowSystem WindowSystem = new("MapGilTracker");
-        private MainWindow MainWindow { get; set; }
-
         public bool isLoggedIn {
             get {
-                return ClientState.LocalPlayer != null;
+                return Services.ClientState.LocalPlayer != null;
             }
         }
-        public bool isTracking { get; set; } = false;
+
+        public RewardRecordKeeper rewardTracker { get; set; }
+        public Configuration config { get; set; }
 
 
-        public MapGilTracker()
+        private WindowSystem windowSystem = new("MapGilTracker");
+        private MainWindow mainWindow { get; set; }
+
+
+        public MapGilTracker(
+            [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
         {
-            // Initialize member vars
-            rewardTracker = new RewardRecordKeeper();
+            // Initialize our static services
+            Services.Init(pluginInterface);
+
+            // Load our config, or make a new one if needed
+            config = Services.Plugin.GetPluginConfig() as Configuration ?? new Configuration();
+
+            // Initialize any member vars
+            rewardTracker = new RewardRecordKeeper(config);
+
+            // Leaving this here for other open sourcers looking at how to set dev icons
+            // NOTE: You will need to restart the game for any icon chamges to take effect
+            // NOTE: Production icons are fetched asynchronously from the plugin repo, not cached locally
+            var iconPath = Path.Combine(Services.Plugin.AssemblyLocation.Directory!.FullName, "images", "icon.png");
+            if (File.Exists(iconPath))
+                Services.Log.Info("Dev icon found!");
 
             // Register Main Window
-            MainWindow = new MainWindow(this);
-            WindowSystem.AddWindow(MainWindow);
+            mainWindow = new MainWindow(this);
+            windowSystem.AddWindow(mainWindow);
 
             // Add our draw function to imgui
-            PluginInterface.UiBuilder.Draw += () => WindowSystem.Draw();
-            PluginInterface.UiBuilder.OpenMainUi += () => MainWindow.Toggle();
+            Services.Plugin.UiBuilder.Draw += () => windowSystem.Draw();
+            Services.Plugin.UiBuilder.OpenMainUi += () => mainWindow.Toggle();
 
             // Add command
-            var commandInfo = new CommandInfo((_,_) => MainWindow.Toggle()) { HelpMessage = "Show the tracker menu!" };
+            var commandInfo = new CommandInfo((_,_) => mainWindow.Toggle()) { HelpMessage = "Show the tracker menu!" };
             foreach(var alias in commandAliases)
-                CommandManager.AddHandler(alias, commandInfo);
+                Services.CommandManager.AddHandler(alias, commandInfo);
 
             // Register Fate Reward popup handler
-            AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "FateReward", OnFatePostSetup);
+            Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "FateReward", OnFatePostSetup);
 
             // Add our login/logout handlers
-            ClientState.Login += OnLogin;
+            Services.ClientState.Login += OnLogin;
 
             // If plugin is loaded while player is logged in, go ahead and run
-            if (ClientState.LocalPlayer != null)
+            if (Services.ClientState.LocalPlayer != null)
                 OnLogin();
         }
 
         public void Dispose()
         {
             // Close windows
-            WindowSystem.RemoveAllWindows();
-            MainWindow.Dispose();
+            windowSystem.RemoveAllWindows();
+            mainWindow.Dispose();
 
             // Deregister command
             foreach (var alias in commandAliases)
-                CommandManager.RemoveHandler(alias);
+                Services.CommandManager.RemoveHandler(alias);
         }
 
         private void OnLogin()
         {
 #if DEBUG
             // If in debug mode, add some sample data
+            rewardTracker.Clear();
             new DummyData(this).Fill();
+            config.Save();
 #endif
         }
 
         private unsafe void OnFatePostSetup(AddonEvent type, AddonArgs args)
         {
             // Log that we detected a FateReward popup
-            PluginLog.Debug("Fate Popup Detected!");
+            Services.Log.Debug("Fate Popup Detected!");
 
             // If not tracking, just exit.
-            if (!isTracking) return;
+            if (!config.isTracking) return;
 
             // Work our way down to the text box that we need. Note that these hardcoded
             // node IDs were found via trial and error using Dalamud's built in addon explorer tool
             var fateRewardAddon = (AtkUnitBase*)args.Addon;
             var gil = Utils.GetIntFromFateReward(fateRewardAddon);
 
-            // Print it for now
-            PluginLog.Debug("Gil earned: {0}", gil);
-
             // Format player list
             // If solo, just the player. Else, the party.
-            if (PartyList.Count == 0)
+            if (Services.PartyList.Count == 0)
             {
-                var playerName = ClientState.LocalPlayer!.Name.ToString();
+                var playerName = Services.ClientState.LocalPlayer!.Name.ToString();
                 rewardTracker.AddRecord(gil, playerName);
             }
             else
             {
-                foreach (var player in PartyList)
+                foreach (var player in Services.PartyList)
                     rewardTracker.AddRecord(gil, player.Name.ToString());
             }
 
+            // Save config
+            config.Save();
+
             // Toast me
-            ToastGui.ShowNormal($"GT: Recorded reward of {gil}g!");
+            Services.ToastGui.ShowNormal($"GT: Recorded reward of {gil}g!");
         }
     }
 }

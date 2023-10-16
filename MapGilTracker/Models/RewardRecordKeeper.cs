@@ -8,18 +8,27 @@ using System.Xml.Linq;
 
 namespace MapGilTracker.Models
 {
+    [Serializable]
     public class RewardRecordKeeper
     {
         public Hashtable userTable { get; set; }
         public List<RewardRecord> rewardList { get; set; }
 
-        public RewardRecordKeeper()
+        public RewardRecordKeeper(Configuration config)
         {
+            // We want our list to persist between crashes, DCs, etc.
+            // so we store/serialize in config and load a ref here. :)
+            rewardList = config.rewardList;
+
+            // Populate usertable if rewardList already exists
             userTable = new Hashtable();
-            rewardList = new List<RewardRecord>();
+            foreach (var record in rewardList)
+                if (!userTable.ContainsKey(record.player!))
+                    userTable.Add(record.player!, true);
         }
 
-        public RewardRecord AddRecord(int value, string name)
+        public RewardRecord AddRecord(int value, string name) => AddRecord(value, name, DateTime.Now);
+        public RewardRecord AddRecord(int value, string name, DateTime ts)
         {
             // Add user to userTable, if they don't exist
             // Don't really care about the value here, just abusing hashing for keys
@@ -29,7 +38,7 @@ namespace MapGilTracker.Models
             // Generate record
             var record = new RewardRecord
             {
-                timestamp = DateTime.Now,
+                timestamp = ts,
                 value = value,
                 player = name
             };
@@ -45,8 +54,8 @@ namespace MapGilTracker.Models
             rewardList.Remove(record);
 
             // If player is in no more records, remove from user table
-            if (userTable.ContainsKey(record.player) && !rewardList.Any(e => e.player == record.player))
-                userTable.Remove(record.player);
+            if (userTable.ContainsKey(record.player!) && !rewardList.Any(e => e.player == record.player))
+                userTable.Remove(record.player!);
         }
 
         public void Clear()
