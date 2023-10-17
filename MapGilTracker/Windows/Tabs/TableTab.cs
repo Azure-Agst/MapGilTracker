@@ -136,7 +136,8 @@ namespace MapGilTracker.Windows.Tabs
             ImGui.Text($"# of Tracked Participants: {recordKeeper.userTable.Count}");
             int totalEarnings = recordKeeper.rewardList.Select(e => e.value).Sum();
             ImGui.Text($"Total amount earned: {totalEarnings}");
-            int avgEarned = (int)Math.Floor(totalEarnings / (double)recordKeeper.userTable.Count);
+            int avgEarned = recordKeeper.userTable.Count > 0 ? 
+                (int)Math.Floor(totalEarnings / (double)recordKeeper.userTable.Count) : 0;
             ImGui.Text($"Avg amount earned: {avgEarned}");
 
             ImGui.Separator();
