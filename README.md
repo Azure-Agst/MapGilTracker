@@ -2,6 +2,7 @@
 
 # FFXIV FATE/Map Gil Tracker
 
+![Dynamic XML Badge](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Agst%2FMapGilTracker%2Fmaster%2FMapGilTracker%2FMapGilTracker.csproj&query=%2F%2FProject%2FPropertyGroup%2FVersion&label=Version&color=blue) 
 ![GitHub](https://img.shields.io/github/license/Azure-Agst/MapGilTracker)
 
 This plugin aims to simplify reward tracking for FCs who use FATEs/Maps as fundraising events! Simply install it, enable it, and it'll automatically track every chest or sack opened and calculate how much gil each person owes.
@@ -24,7 +25,7 @@ As of right now, this project is still in a development and testing state and is
 3. Open MapGilTracker.sln in VS and build it
 4. In Dalamud, open the Plugin Installer settings menu
 5. Under the "Experimental" tab, add the full path to the compiled DLL under "Dev Plugin Locations"
-6. Profit? 
+6. Profit? (Heh.)
 
 ## Contributions
 

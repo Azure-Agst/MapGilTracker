@@ -32,10 +32,8 @@ namespace MapGilTracker
         public RewardRecordKeeper rewardTracker { get; set; }
         public Configuration config { get; set; }
 
-
         private WindowSystem windowSystem = new("MapGilTracker");
         private MainWindow mainWindow { get; set; }
-
 
         public MapGilTracker(
             [RequiredVersion("1.0")] DalamudPluginInterface pluginInterface)
