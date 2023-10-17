@@ -3,19 +3,12 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using System.IO;
 using Dalamud.Interface.Windowing;
-using Dalamud.Plugin.Services;
 using Dalamud.Game.Addon.Lifecycle;
 using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using System;
-using System.Collections.Generic;
 using MapGilTracker.Models;
-using System.Linq;
 using MapGilTracker.Windows;
-using static Lumina.Data.Parsing.Layer.LayerCommon;
 using MapGilTracker.Tools;
-using Lumina.Excel.GeneratedSheets;
-using System.Reflection;
 
 namespace MapGilTracker
 {
