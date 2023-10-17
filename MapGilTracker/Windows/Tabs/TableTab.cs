@@ -11,6 +11,7 @@ using Dalamud.Interface.Components;
 using ImGuiNET;
 using MapGilTracker.Interfaces;
 using MapGilTracker.Models;
+using MapGilTracker.Tools;
 
 namespace MapGilTracker.Windows.Tabs
 {
@@ -140,6 +141,45 @@ namespace MapGilTracker.Windows.Tabs
             ImGui.Text($"Total amount earned: {totalEarnings}");
             int avgEarned = (int)Math.Floor(totalEarnings / (double)recordKeeper.userTable.Count);
             ImGui.Text($"Avg amount earned: {avgEarned}");
+
+            ImGui.Separator();
+
+            // Clear button
+            if (ImGui.Button("Clear"))
+                ImGui.OpenPopup("Clear##TableTab");
+
+#if DEBUG
+            // If indev, add a sample data button
+            if (ImGui.Button("Add Dummy Data"))
+                new DummyData(plugin).Fill();
+#endif
+
+            /*
+             * Modal Definitions
+             */
+
+            // Clear Modal
+            bool clearModalPOpen = true;
+            if (ImGui.BeginPopupModal("Clear##TableTab", ref clearModalPOpen, ImGuiWindowFlags.AlwaysAutoResize))
+            {
+                // Prompt
+                ImGui.Text("Are you sure you want to clear the queue?");
+                ImGui.Separator();
+
+                // Buttons
+                if (ImGui.Button("Confirm")) {
+                    plugin.rewardTracker.Clear();
+                    ImGui.CloseCurrentPopup();
+                }
+                ImGui.SetItemDefaultFocus();
+                ImGui.SameLine();
+                if (ImGui.Button("Cancel"))
+                {
+                    ImGui.CloseCurrentPopup();
+                }
+
+                ImGui.EndPopup();
+            }
 
         }
     }
