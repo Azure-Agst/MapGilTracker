@@ -14,7 +14,7 @@ namespace MapGilTracker.Windows.Tabs
 {
     public class ReportTab: ITabItem
     {
-        public string TabName => "Report View";
+        public string TabName => "Summary";
         public bool Enabled => true;
 
         private const string SelectPlayer = "Select Player";
