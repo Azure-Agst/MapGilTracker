@@ -19,5 +19,13 @@ namespace MapGilTracker
         {
             Services.Plugin!.SavePluginConfig(this);
         }
+
+        public void ToggleIsTracking()
+        {
+            isTracking = !isTracking;
+            var statusText = isTracking ? "Enabled" : "Disabled";
+            Services.Chat.Print($"GilTracker Status is now: {statusText}");
+            Save();
+        }
     }
 }

@@ -19,6 +19,7 @@ namespace MapGilTracker
         [PluginService] public static ICommandManager CommandManager { get; set; } = null!;
         [PluginService] public static IToastGui ToastGui { get; set; } = null!;
         [PluginService] public static IPluginLog Log { get; set; } = null!;
+        [PluginService] public static IChatGui Chat { get; set; } = null!;
 
         internal static void Init(DalamudPluginInterface pluginInterface)
         {

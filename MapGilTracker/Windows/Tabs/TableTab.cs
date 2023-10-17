@@ -19,7 +19,7 @@ namespace MapGilTracker.Windows.Tabs
     {
 
         
-        public string TabName => "Table View";
+        public string TabName => "Record View";
         public bool Enabled => true;
 
         private MapGilTracker plugin;
@@ -129,10 +129,7 @@ namespace MapGilTracker.Windows.Tabs
 
             // IsTracking Button Implementation
             if (ImGui.Button(plugin.config.isTracking ? "Enabled" : "Disabled"))
-            {
-                plugin.config.isTracking = !plugin.config.isTracking;
-                plugin.config.Save();
-            }
+                plugin.config.ToggleIsTracking();
             ImGui.PopStyleColor(2);
 
             // Other stats

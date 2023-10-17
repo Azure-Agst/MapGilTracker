@@ -15,7 +15,8 @@ namespace MapGilTracker
     public sealed class MapGilTracker : IDalamudPlugin
     {
         public string Name => "FATE/Map Gil Tracker";
-        public string[] commandAliases = { "/giltracker", "/gt" };
+        public string[] mainCmdAliases = { "/giltracker", "/gt" };
+        public string[] toggleCmdAliases = { "/gttoggle" };
         public bool isLoggedIn {
             get {
                 return Services.ClientState.LocalPlayer != null;
@@ -55,10 +56,19 @@ namespace MapGilTracker
             Services.Plugin.UiBuilder.Draw += () => windowSystem.Draw();
             Services.Plugin.UiBuilder.OpenMainUi += () => mainWindow.Toggle();
 
-            // Add command
-            var commandInfo = new CommandInfo((_,_) => mainWindow.Toggle()) { HelpMessage = "Show the tracker menu!" };
-            foreach(var alias in commandAliases)
-                Services.CommandManager.AddHandler(alias, commandInfo);
+            // Add main window commands
+            var mainWindowCmdInfo = new CommandInfo((_,_) => mainWindow.Toggle()) { 
+                HelpMessage = "Show the tracker menu!" 
+            };
+            foreach (var alias in mainCmdAliases)
+                Services.CommandManager.AddHandler(alias, mainWindowCmdInfo);
+
+            // Add toggle command
+            var toggleCmdInfo = new CommandInfo((_, _) => config.ToggleIsTracking()) {
+                HelpMessage = "Toggle the status of the tracker" 
+            };
+            foreach (var alias in toggleCmdAliases)
+                Services.CommandManager.AddHandler(alias, toggleCmdInfo);
 
             // Register Fate Reward popup handler
             Services.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "FateReward", OnFatePostSetup);
@@ -77,8 +87,10 @@ namespace MapGilTracker
             windowSystem.RemoveAllWindows();
             mainWindow.Dispose();
 
-            // Deregister command
-            foreach (var alias in commandAliases)
+            // Deregister commands
+            foreach (var alias in mainCmdAliases)
+                Services.CommandManager.RemoveHandler(alias);
+            foreach (var alias in toggleCmdAliases)
                 Services.CommandManager.RemoveHandler(alias);
         }
 
