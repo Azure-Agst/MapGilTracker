@@ -139,23 +139,23 @@ namespace MapGilTracker.Windows.Tabs
 
                         ImGui.TableNextRow();
                         ImGui.TableNextColumn();
-                        if (ImGui.Selectable($"{player}##{index}"))
+                        if (ImGui.Selectable($"{player}##Nme{index}"))
                             Utils.CopyToClipboard(player);
 
                         ImGui.TableNextColumn();
-                        if (ImGui.Selectable($"{rewardCountStr}##{index}"))
+                        if (ImGui.Selectable($"{rewardCountStr}##Rwd{index}"))
                             Utils.CopyToClipboard(rewardCountStr);
 
                         ImGui.TableNextColumn();
-                        if (ImGui.Selectable($"{totalGilStr}##{index}"))
+                        if (ImGui.Selectable($"{totalGilStr}##Ttl{index}"))
                             Utils.CopyToClipboard(totalGilStr);
 
                         ImGui.TableNextColumn();
-                        if (ImGui.Selectable($"{takeAmtStr}##{index}"))
+                        if (ImGui.Selectable($"{takeAmtStr}##Tke{index}"))
                             Utils.CopyToClipboard(takeAmtStr);
 
                         ImGui.TableNextColumn();
-                        if (ImGui.Selectable($"{taxAmtStr}##{index}"))
+                        if (ImGui.Selectable($"{taxAmtStr}##Tax{index}"))
                             Utils.CopyToClipboard(taxAmtStr);
 
                         index++;
