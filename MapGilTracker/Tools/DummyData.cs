@@ -38,7 +38,7 @@ namespace MapGilTracker.Tools
                 int reward = rand.Next(2, 21) * 500;
                 int playerCount = rand.Next(1, players.Length);
                 var ts = DateTime.Now - TimeSpan.FromMinutes(10-f);
-                for (int i = 0; i < playerCount; i++)
+                for (int i = 0; i <= playerCount; i++)
                 {
                     plugin.rewardTracker.AddRecord(reward, players[i], ts);
                 }
