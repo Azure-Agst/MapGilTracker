@@ -23,6 +23,7 @@ namespace MapGilTracker.Windows.Tabs
         private RewardRecordKeeper recordKeeper;
         private string? curName = null;
         private int taxRate = 50;
+        private bool copyTimestamps = false;
 
         public ReportTab(MainWindow mainWindow) {
             plugin = mainWindow.plugin;
@@ -58,7 +59,14 @@ namespace MapGilTracker.Windows.Tabs
             var rightSize = ImGui.GetContentRegionAvail();
             if (ImGui.BeginChild("###ReportTabRightColumnChild", rightSize, false, ImGuiWindowFlags.NoDecoration))
             {
-                ImGui.Text("Yeah.");
+
+                ImGui.Text("Copy Distinct Gil Rewards");
+                ImGui.TextDisabled("For easy importing into spreadsheets");
+
+                ImGui.Checkbox("Include timestamps?", ref copyTimestamps);
+                if (ImGui.Button("Copy to clipboard"))
+                    CopyDistinctRewards();
+
                 ImGui.EndChild();
             }
 
@@ -140,6 +148,31 @@ namespace MapGilTracker.Windows.Tabs
         {
             ImGui.SetClipboardText(text);
             Services.Chat.Print($"[GT] \"{text}\" copied to clipboard.");
+        }
+
+        private void CopyDistinctRewards()
+        {
+            // Get a list of unique events
+            var distinctEvents = plugin.rewardTracker.rewardList
+                .DistinctBy(e => e.timestamp)
+                .ToList();
+
+            // Format our string
+            string valueStr = "";
+            foreach (var record in distinctEvents)
+            {
+                valueStr += record.value.ToString();
+                if (copyTimestamps)
+                    valueStr += "\t" + record.timestamp.ToString();
+                valueStr += "\n";
+            }
+
+            // Copy to clipboard
+            ImGui.SetClipboardText(valueStr);
+
+            // Log in chat
+            var devCnt = distinctEvents.Count;
+            Services.Chat.Print($"Copied list of {devCnt} entries to the clipboard!");
         }
 
         public void _OldDraw()
