@@ -31,6 +31,78 @@ namespace MapGilTracker.Windows.Tabs
 
         public void Draw()
         {
+            DrawStatementTable();
+        }
+
+        public void DrawStatementTable()
+        {
+            // Start Table
+            var colCount = 4;
+            var tableFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable;
+            if (!ImGui.BeginTable("StatementTable", colCount, tableFlags))
+                return;
+
+            // Set Headers
+            ImGui.TableSetupColumn("Player", ImGuiTableColumnFlags.WidthFixed);
+            ImGui.TableSetupColumn("Cnt.", ImGuiTableColumnFlags.WidthFixed);
+            ImGui.TableSetupColumn("Total", ImGuiTableColumnFlags.WidthFixed);
+            ImGui.TableSetupColumn("Taxes", ImGuiTableColumnFlags.WidthFixed);
+            ImGui.TableHeadersRow();
+
+            // Prep vars
+            var playerList = new List<string>();
+            foreach (var key in recordKeeper.userTable.Keys)
+                playerList.Add((string)key);
+            playerList = playerList.OrderBy(x => x).ToList();
+
+            // Populate Table 
+            if (recordKeeper.rewardList.Count < 1)
+            {
+                ImGui.TableNextRow();
+                for (var i = 0; i < colCount; i++)
+                {
+                    ImGui.TableNextColumn();
+                    ImGui.Text("---");
+                }
+            }
+            else
+            {
+                foreach (var player in playerList)
+                {
+                    // Calculations first...
+                    var playerRewards = plugin.rewardTracker.rewardList
+                        .Where(e => e.player == player);
+                    var totalGil = playerRewards.Select(e => e.value).Sum();
+                    var taxAmt = (int)Math.Floor(totalGil * (taxRate / 100d));
+
+                    // ...Display later!
+                    ImGui.PushStyleColor(ImGuiCol.Button, 0x00000000);
+
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    if (ImGui.SmallButton(player))
+                        ImGui.SetClipboardText(player);
+
+                    ImGui.TableNextColumn();
+                    if (ImGui.SmallButton($"{playerRewards.Count()}"))
+                        ImGui.SetClipboardText($"{playerRewards.Count()}");
+
+                    ImGui.TableNextColumn();
+                    if (ImGui.SmallButton($"{totalGil}g"))
+                        ImGui.SetClipboardText($"{totalGil}g");
+
+                    ImGui.TableNextColumn();
+                    if (ImGui.SmallButton($"{taxAmt}g"))
+                        ImGui.SetClipboardText($"{taxAmt}g");
+
+                    ImGui.PopStyleColor();
+                }
+            }
+            ImGui.EndTable();
+        }
+
+        public void _OldDraw()
+        {
             // Get dimensions
             var windowSize = ImGui.GetContentRegionAvail();
 
