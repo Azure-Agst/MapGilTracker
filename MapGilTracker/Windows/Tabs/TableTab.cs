@@ -167,6 +167,7 @@ namespace MapGilTracker.Windows.Tabs
                 // Buttons
                 if (ImGui.Button("Confirm")) {
                     plugin.rewardTracker.Clear();
+                    plugin.config.Save();
                     ImGui.CloseCurrentPopup();
                 }
                 ImGui.SetItemDefaultFocus();
