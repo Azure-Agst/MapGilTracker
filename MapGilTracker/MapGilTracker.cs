@@ -9,6 +9,7 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using MapGilTracker.Models;
 using MapGilTracker.Windows;
 using MapGilTracker.Tools;
+using System;
 
 namespace MapGilTracker
 {
@@ -117,17 +118,20 @@ namespace MapGilTracker
             var fateRewardAddon = (AtkUnitBase*)args.Addon;
             var gil = Utils.GetIntFromFateReward(fateRewardAddon);
 
+            // Get current time
+            var curTime = DateTime.Now;
+
             // Format player list
             // If solo, just the player. Else, the party.
             if (Services.PartyList.Count == 0)
             {
                 var playerName = Services.ClientState.LocalPlayer!.Name.ToString();
-                rewardTracker.AddRecord(gil, playerName);
+                rewardTracker.AddRecord(gil, playerName, curTime);
             }
             else
             {
                 foreach (var player in Services.PartyList)
-                    rewardTracker.AddRecord(gil, player.Name.ToString());
+                    rewardTracker.AddRecord(gil, player.Name.ToString(), curTime);
             }
 
             // Save config
