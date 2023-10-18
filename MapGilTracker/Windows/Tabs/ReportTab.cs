@@ -31,19 +31,51 @@ namespace MapGilTracker.Windows.Tabs
 
         public void Draw()
         {
-            DrawStatementTable();
+            // Get whole region size
+            var windowSize = ImGui.GetContentRegionAvail();
+
+            // Start Main Table Wrapper
+            if (!ImGui.BeginTable("##ReportTabContainer", 2))
+                return;
+
+            // Set Left Column Flags
+            ImGui.TableSetupColumn("##ReportTabLeftColumn", ImGuiTableColumnFlags.WidthFixed, windowSize.X - 240f);
+            ImGui.TableNextColumn();
+
+            // Create child for lefthand side
+            var leftSize = ImGui.GetContentRegionAvail();
+            if (ImGui.BeginChild("###ReportTabLeftColumnChild", leftSize, false, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysVerticalScrollbar))
+            {
+                DrawStatementTable();
+                ImGui.EndChild();
+            }
+
+            // Set Right Column Flags
+            ImGui.TableSetupColumn("##ReportTabRightColumn", ImGuiTableColumnFlags.WidthStretch);
+            ImGui.TableNextColumn();
+
+            // Create child for righthand side
+            var rightSize = ImGui.GetContentRegionAvail();
+            if (ImGui.BeginChild("###ReportTabRightColumnChild", rightSize, false, ImGuiWindowFlags.NoDecoration))
+            {
+                ImGui.Text("Yeah.");
+                ImGui.EndChild();
+            }
+
+            // End table
+            ImGui.EndTable();
         }
 
         public void DrawStatementTable()
         {
             // Start Table
             var colCount = 4;
-            var tableFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable;
+            var tableFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg;
             if (!ImGui.BeginTable("StatementTable", colCount, tableFlags))
                 return;
 
             // Set Headers
-            ImGui.TableSetupColumn("Player", ImGuiTableColumnFlags.WidthFixed);
+            ImGui.TableSetupColumn("Player", ImGuiTableColumnFlags.WidthStretch);
             ImGui.TableSetupColumn("Cnt.", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("Total", ImGuiTableColumnFlags.WidthFixed);
             ImGui.TableSetupColumn("Taxes", ImGuiTableColumnFlags.WidthFixed);
@@ -72,8 +104,11 @@ namespace MapGilTracker.Windows.Tabs
                     // Calculations first...
                     var playerRewards = plugin.rewardTracker.rewardList
                         .Where(e => e.player == player);
+                    var rewardCountStr = $"{playerRewards.Count()}";
                     var totalGil = playerRewards.Select(e => e.value).Sum();
+                    var totalGilStr = $"{totalGil}g";
                     var taxAmt = (int)Math.Floor(totalGil * (taxRate / 100d));
+                    var taxAmtStr = $"{taxAmt}g";
 
                     // ...Display later!
                     ImGui.PushStyleColor(ImGuiCol.Button, 0x00000000);
@@ -81,24 +116,30 @@ namespace MapGilTracker.Windows.Tabs
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     if (ImGui.SmallButton(player))
-                        ImGui.SetClipboardText(player);
+                        CopyToClipboard(player);
 
                     ImGui.TableNextColumn();
-                    if (ImGui.SmallButton($"{playerRewards.Count()}"))
-                        ImGui.SetClipboardText($"{playerRewards.Count()}");
+                    if (ImGui.SmallButton(rewardCountStr))
+                        CopyToClipboard(rewardCountStr);
 
                     ImGui.TableNextColumn();
-                    if (ImGui.SmallButton($"{totalGil}g"))
-                        ImGui.SetClipboardText($"{totalGil}g");
+                    if (ImGui.SmallButton(totalGilStr))
+                        CopyToClipboard(totalGilStr);
 
                     ImGui.TableNextColumn();
-                    if (ImGui.SmallButton($"{taxAmt}g"))
-                        ImGui.SetClipboardText($"{taxAmt}g");
+                    if (ImGui.SmallButton(taxAmtStr))
+                        CopyToClipboard(taxAmtStr);
 
                     ImGui.PopStyleColor();
                 }
             }
             ImGui.EndTable();
+        }
+
+        private void CopyToClipboard(string text)
+        {
+            ImGui.SetClipboardText(text);
+            Services.Chat.Print($"[GT] \"{text}\" copied to clipboard.");
         }
 
         public void _OldDraw()
