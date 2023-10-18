@@ -158,11 +158,13 @@ namespace MapGilTracker.Windows.Tabs
             ImGui.Separator();
 
             // Export for spreadsheet
-            ImGui.Text("Copy Distinct Reward List");
-            ImGui.TextDisabled("For easy pasting into Excel/Sheets");
+            ImGui.Text("Export Spreadsheet Data");
+            ImGui.PushTextWrapPos();
+            ImGui.TextDisabled("Copy a list of gil earned from each chest/sack/FATE for easy pasting into a spreadsheet.");
+            ImGui.PopTextWrapPos();
 
             ImGui.Checkbox("Include timestamps?", ref copyTimestamps);
-            if (ImGui.Button("Copy Spreadsheet Data"))
+            if (ImGui.Button("Copy Data"))
                 CopyDistinctRewards();
             ImGui.Separator();
 
