@@ -17,8 +17,6 @@ namespace MapGilTracker.Windows.Tabs
 {
     internal class TableTab: ITabItem
     {
-
-        
         public string TabName => "Record View";
         public bool Enabled => true;
 
@@ -87,7 +85,7 @@ namespace MapGilTracker.Windows.Tabs
                 ImGui.TableNextColumn();
                 ImGui.Text("---");
                 ImGui.TableNextColumn();
-                ImGui.Text("No records!");
+                ImGui.Text("---");
                 ImGui.TableNextColumn();
                 ImGui.Text("---");
             }
