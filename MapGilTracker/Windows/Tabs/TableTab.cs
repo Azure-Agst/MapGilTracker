@@ -22,6 +22,7 @@ namespace MapGilTracker.Windows.Tabs
 
         private MapGilTracker plugin;
         private RewardRecordKeeper recordKeeper;
+        private bool copyTimestamps = false;
 
         public TableTab(MainWindow mainWindow) {
             plugin = mainWindow.plugin;
@@ -43,7 +44,7 @@ namespace MapGilTracker.Windows.Tabs
 
             // Create child for lefthand side
             var leftSize = ImGui.GetContentRegionAvail();
-            if (ImGui.BeginChild("###TableTabLeftColumnChild", leftSize, false, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysVerticalScrollbar))
+            if (ImGui.BeginChild("###TableTabLeftColumnChild", leftSize, false, ImGuiWindowFlags.NoDecoration))
             {
                 DrawRecordsTable();
                 ImGui.EndChild();
@@ -67,42 +68,68 @@ namespace MapGilTracker.Windows.Tabs
 
         private void DrawRecordsTable()
         {
-            // Start Table
-            var tableFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg | ImGuiTableFlags.Resizable;
-            if (!ImGui.BeginTable("RecordTable", 3, tableFlags))
-                return;
-
-            // Set Headers
-            ImGui.TableSetupColumn("Timestamp", ImGuiTableColumnFlags.WidthFixed);
-            ImGui.TableSetupColumn("Amount", ImGuiTableColumnFlags.WidthFixed);
-            ImGui.TableSetupColumn("Participation", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableHeadersRow();
-
-            // Populate Table 
-            if (recordKeeper.rewardList.Count < 1)
+            // Create second child for lefthand side
+            var regionAvail = ImGui.GetContentRegionAvail();
+            var leftSize = regionAvail with { Y = regionAvail.Y - 25 };
+            if (ImGui.BeginChild("###TableTabLeftColumnChildChild", leftSize, false, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysVerticalScrollbar))
             {
-                ImGui.TableNextRow();
-                ImGui.TableNextColumn();
-                ImGui.Text("---");
-                ImGui.TableNextColumn();
-                ImGui.Text("---");
-                ImGui.TableNextColumn();
-                ImGui.Text("---");
-            }
-            else
-            {
-                foreach (var entry in recordKeeper.rewardList)
+                // Start Table
+                var tableFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg;
+                if (!ImGui.BeginTable("RecordTable", 3, tableFlags))
+                    return;
+
+                // Set Headers
+                ImGui.TableSetupColumn("Timestamp", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Participant", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Amount", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableHeadersRow();
+
+                // Populate Table 
+                if (recordKeeper.rewardList.Count < 1)
                 {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGui.Text(entry.timestamp.ToString());
+                    ImGui.Text("---");
                     ImGui.TableNextColumn();
-                    ImGui.Text($"{entry.value}g");
+                    ImGui.Text("---");
                     ImGui.TableNextColumn();
-                    ImGui.TextWrapped(entry.player);
+                    ImGui.Text("---");
                 }
+                else
+                {
+                    // We have to append a hidden index to each button, otherwise the
+                    // UI only responds to clicks on the first instance of a str
+                    var index = 0;
+
+                    foreach (var entry in recordKeeper.rewardList)
+                    {
+                        // Set up vars
+                        var tsStr = entry.timestamp.ToString();
+                        var gilStr = $"{entry.value}g";
+
+                        ImGui.TableNextRow();
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable($"{tsStr}##{index}"))
+                            Utils.CopyToClipboard(tsStr);
+
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable($"{entry.player}##{index}"))
+                            Utils.CopyToClipboard(entry.player ?? "");
+
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable($"{gilStr}##{index}"))
+                            Utils.CopyToClipboard(gilStr);
+
+                        index++;
+                    }
+                }
+                ImGui.EndTable();
+                ImGui.EndChild();
             }
-            ImGui.EndTable();
+
+            // Extra Hint
+            ImGui.Separator();
+            ImGui.TextDisabled("Clicking on any value will copy it to your clipboard!");
         }
 
         public void DrawInfoMenu()
@@ -128,15 +155,15 @@ namespace MapGilTracker.Windows.Tabs
             if (ImGui.Button(plugin.config.isTracking ? "Enabled" : "Disabled"))
                 plugin.config.ToggleIsTracking();
             ImGui.PopStyleColor(2);
+            ImGui.Separator();
 
-            // Other stats
-            ImGui.Text($"# of Tracked Participants: {recordKeeper.userTable.Count}");
-            int totalEarnings = recordKeeper.rewardList.Select(e => e.value).Sum();
-            ImGui.Text($"Total amount earned: {totalEarnings}");
-            int avgEarned = recordKeeper.userTable.Count > 0 ? 
-                (int)Math.Floor(totalEarnings / (double)recordKeeper.userTable.Count) : 0;
-            ImGui.Text($"Avg amount earned: {avgEarned}");
+            // Export for spreadsheet
+            ImGui.Text("Copy Distinct Reward List");
+            ImGui.TextDisabled("For easy pasting into Excel/Sheets");
 
+            ImGui.Checkbox("Include timestamps?", ref copyTimestamps);
+            if (ImGui.Button("Copy Spreadsheet Data"))
+                CopyDistinctRewards();
             ImGui.Separator();
 
             // Clear button
@@ -145,6 +172,7 @@ namespace MapGilTracker.Windows.Tabs
 
 #if DEBUG
             // If indev, add a sample data button
+            ImGui.SameLine();
             if (ImGui.Button("Add Dummy Data"))
                 new DummyData(plugin).Fill();
 #endif
@@ -176,7 +204,30 @@ namespace MapGilTracker.Windows.Tabs
 
                 ImGui.EndPopup();
             }
+        }
 
+        private void CopyDistinctRewards()
+        {
+            // Get a list of unique events
+            var distinctEvents = plugin.rewardTracker.rewardList
+                .DistinctBy(e => e.timestamp)
+                .ToList();
+
+            // Format our string
+            string valueStr = "";
+            foreach (var record in distinctEvents)
+            {
+                if (copyTimestamps)
+                    valueStr += record.timestamp.ToString() + "\t";
+                valueStr += record.value.ToString() + "\n";
+            }
+
+            // Copy to clipboard
+            ImGui.SetClipboardText(valueStr);
+
+            // Log in chat
+            var devCnt = distinctEvents.Count;
+            Services.Chat.Print($"Copied list of {devCnt} entries to the clipboard!");
         }
     }
 }
