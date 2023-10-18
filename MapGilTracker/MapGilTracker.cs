@@ -99,8 +99,8 @@ namespace MapGilTracker
         {
 #if DEBUG
             // If in debug mode, add some sample data
-            rewardTracker.Clear();
-            new DummyData(this).Fill();
+            //rewardTracker.Clear();
+            //new DummyData(this).Fill();
             config.Save();
 #endif
         }
