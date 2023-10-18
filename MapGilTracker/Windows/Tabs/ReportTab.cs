@@ -71,19 +71,19 @@ namespace MapGilTracker.Windows.Tabs
                 int totalEarnings = recordKeeper.rewardList.Select(e => e.value).Sum();
 
                 // Total amount of gil earned by all players
-                ImGui.Text($"Total gil earned: {totalEarnings}g");
+                ImGui.Text($"Total gil earned: {totalEarnings:n0}g");
 
                 // Average Gross Income
                 int grossPlAvg = recordKeeper.userTable.Count > 0 ?
                     (int)Math.Floor(totalEarnings / (double)recordKeeper.userTable.Count) : 0;
-                ImGui.Text($"Gross avg. earned: {grossPlAvg}g");
+                ImGui.Text($"Gross avg. earned: {grossPlAvg:n0}g");
                 ImGui.SameLine(); ImGui.TextDisabled("(?)");
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("Average amount earned per\nplayer, before expenses are\ncalculated.");
 
                 // Average Net Income
                 int netPlAvg = (int)(grossPlAvg * ((100-taxRate) / 100d));
-                ImGui.Text($"Net avg. earned: {netPlAvg}g");
+                ImGui.Text($"Net avg. earned: {netPlAvg:n0}g");
                 ImGui.SameLine(); ImGui.TextDisabled("(?)");
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("Average amount earned per\nplayer, after expenses are\ncalculated.");
@@ -138,19 +138,28 @@ namespace MapGilTracker.Windows.Tabs
                     // UI only responds to clicks on the first instance of a str
                     var index = 0;
 
+                    // Running Totals
+                    int ptyRwdCnt = 0; int ptyTotalGil = 0;
+                    int ptyTaxAmt = 0; int ptyTakeAmt = 0;
+
                     foreach (var player in playerList)
                     {
                         // Calculations first...
                         var playerRewards = plugin.rewardTracker.rewardList
                             .Where(e => e.player == player);
-                        var rewardCountStr = $"{playerRewards.Count()}";
+                        var rewardCountStr = $"{playerRewards.Count():n0}";
                         var totalGil = playerRewards.Select(e => e.value).Sum();
-                        var totalGilStr = $"{totalGil}g";
+                        var totalGilStr = $"{totalGil:n0}g";
                         var taxAmt = (int)Math.Floor(totalGil * (taxRate / 100d));
-                        var taxAmtStr = $"{taxAmt}g";
+                        var taxAmtStr = $"{taxAmt:n0}g";
                         var takeAmt = totalGil - taxAmt;
-                        var takeAmtStr = $"{takeAmt}g";
+                        var takeAmtStr = $"{takeAmt:n0}g";
 
+                        // Increase running totals
+                        ptyRwdCnt += playerRewards.Count(); ptyTotalGil += totalGil;
+                        ptyTaxAmt += taxAmt; ptyTakeAmt += takeAmt;
+
+                        // Print row
                         ImGui.TableNextRow();
                         ImGui.TableNextColumn();
                         if (ImGui.Selectable($"{player}##Nme{index}"))
@@ -174,7 +183,42 @@ namespace MapGilTracker.Windows.Tabs
 
                         index++;
                     }
+
+                    // Spacer
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.Text("---");
+
+                    // Convert running totals to strings
+                    var ptyRwdCntStr = $"{ptyRwdCnt:n0}";
+                    var ptyTotalGilStr = $"{ptyTotalGil:n0}";
+                    var ptyTaxAmtStr = $"{ptyTaxAmt:n0}";
+                    var ptyTakeAmtStr = $"{ptyTakeAmt:n0}";
+
+                    // Print Totals Row
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    if (ImGui.Selectable($"Total##Nme{index}"))
+                        Utils.CopyToClipboard("Total");
+
+                    ImGui.TableNextColumn();
+                    if (ImGui.Selectable($"{ptyRwdCntStr}##Rwd{index}"))
+                        Utils.CopyToClipboard($"{ptyRwdCntStr}");
+
+                    ImGui.TableNextColumn();
+                    if (ImGui.Selectable($"{ptyTotalGilStr}g##Ttl{index}"))
+                        Utils.CopyToClipboard($"{ptyTotalGilStr}g");
+
+                    ImGui.TableNextColumn();
+                    if (ImGui.Selectable($"{ptyTakeAmtStr}g##Tke{index}"))
+                        Utils.CopyToClipboard($"{ptyTakeAmtStr}g");
+
+                    ImGui.TableNextColumn();
+                    if (ImGui.Selectable($"{ptyTaxAmtStr}g##Tax{index}"))
+                        Utils.CopyToClipboard($"{ptyTaxAmtStr}g");
+
                 }
+
                 ImGui.EndTable();
                 ImGui.EndChild();
             }
