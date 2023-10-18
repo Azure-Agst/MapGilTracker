@@ -36,12 +36,11 @@ namespace MapGilTracker.Windows.Tabs
             var windowSize = ImGui.GetContentRegionAvail();
 
             // Start Main Table Wrapper
-            var tableTabMainFlags = ImGuiTableFlags.Resizable;
-            if (!ImGui.BeginTable("##TableTabContainer", 2, tableTabMainFlags))
+            if (!ImGui.BeginTable("##TableTabContainer", 2))
                 return;
 
             // Set Left Column Flags
-            ImGui.TableSetupColumn("##TableTabLeftColumn", ImGuiTableColumnFlags.WidthStretch, windowSize.X * 0.7f);
+            ImGui.TableSetupColumn("##TableTabLeftColumn", ImGuiTableColumnFlags.WidthFixed, windowSize.X - 240f);
             ImGui.TableNextColumn();
 
             // Create child for lefthand side
