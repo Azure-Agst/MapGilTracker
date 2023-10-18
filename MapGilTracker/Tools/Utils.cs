@@ -1,4 +1,5 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
+using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -44,6 +45,15 @@ namespace MapGilTracker.Tools
             // Parse value and return
             var gilTextValue = gilTextNode->NodeText.ToString();
             return int.Parse(gilTextValue, NumberStyles.AllowThousands);
+        }
+
+        /*
+         * Simple function to copy text to clipboard and also send message
+         */
+        public static void CopyToClipboard(string text)
+        {
+            ImGui.SetClipboardText(text);
+            Services.Chat.Print($"[GT] \"{text}\" copied to clipboard.");
         }
     }
 }

@@ -2,6 +2,7 @@ using ImGuiNET;
 using Lumina.Excel.GeneratedSheets;
 using MapGilTracker.Interfaces;
 using MapGilTracker.Models;
+using MapGilTracker.Tools;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -23,7 +24,6 @@ namespace MapGilTracker.Windows.Tabs
         private RewardRecordKeeper recordKeeper;
         private string? curName = null;
         private int taxRate = 50;
-        private bool copyTimestamps = false;
 
         public ReportTab(MainWindow mainWindow) {
             plugin = mainWindow.plugin;
@@ -45,7 +45,7 @@ namespace MapGilTracker.Windows.Tabs
 
             // Create child for lefthand side
             var leftSize = ImGui.GetContentRegionAvail();
-            if (ImGui.BeginChild("###ReportTabLeftColumnChild", leftSize, false, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysVerticalScrollbar))
+            if (ImGui.BeginChild("###ReportTabLeftColumnChild", leftSize, false, ImGuiWindowFlags.NoDecoration))
             {
                 DrawStatementTable();
                 ImGui.EndChild();
@@ -60,12 +60,19 @@ namespace MapGilTracker.Windows.Tabs
             if (ImGui.BeginChild("###ReportTabRightColumnChild", rightSize, false, ImGuiWindowFlags.NoDecoration))
             {
 
-                ImGui.Text("Copy Distinct Gil Rewards");
-                ImGui.TextDisabled("For easy importing into spreadsheets");
+                // Tax Rate Selector
+                ImGui.InputInt("Tax %", ref taxRate, 5);
+                if (taxRate < 0) taxRate = 0; 
+                if (taxRate > 100) taxRate = 100; 
+                ImGui.Separator();
 
-                ImGui.Checkbox("Include timestamps?", ref copyTimestamps);
-                if (ImGui.Button("Copy to clipboard"))
-                    CopyDistinctRewards();
+                // Other Stats
+                ImGui.Text($"# of Tracked Participants: {recordKeeper.userTable.Count}");
+                int totalEarnings = recordKeeper.rewardList.Select(e => e.value).Sum();
+                ImGui.Text($"Total amount earned: {totalEarnings}");
+                int avgEarned = recordKeeper.userTable.Count > 0 ?
+                    (int)Math.Floor(totalEarnings / (double)recordKeeper.userTable.Count) : 0;
+                ImGui.Text($"Avg amount earned: {avgEarned}");
 
                 ImGui.EndChild();
             }
@@ -76,172 +83,91 @@ namespace MapGilTracker.Windows.Tabs
 
         public void DrawStatementTable()
         {
-            // Start Table
-            var colCount = 4;
-            var tableFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg;
-            if (!ImGui.BeginTable("StatementTable", colCount, tableFlags))
-                return;
-
-            // Set Headers
-            ImGui.TableSetupColumn("Player", ImGuiTableColumnFlags.WidthStretch);
-            ImGui.TableSetupColumn("Cnt.", ImGuiTableColumnFlags.WidthFixed);
-            ImGui.TableSetupColumn("Total", ImGuiTableColumnFlags.WidthFixed);
-            ImGui.TableSetupColumn("Taxes", ImGuiTableColumnFlags.WidthFixed);
-            ImGui.TableHeadersRow();
-
-            // Prep vars
-            var playerList = new List<string>();
-            foreach (var key in recordKeeper.userTable.Keys)
-                playerList.Add((string)key);
-            playerList = playerList.OrderBy(x => x).ToList();
-
-            // Populate Table 
-            if (recordKeeper.rewardList.Count < 1)
+            // Create second child for lefthand side
+            var regionAvail = ImGui.GetContentRegionAvail();
+            var leftSize = regionAvail with { Y = regionAvail.Y - 25 };
+            if (ImGui.BeginChild("###ReportTabLeftColumnChildChild", leftSize, false, ImGuiWindowFlags.NoDecoration))
             {
-                ImGui.TableNextRow();
-                for (var i = 0; i < colCount; i++)
-                {
-                    ImGui.TableNextColumn();
-                    ImGui.Text("---");
-                }
-            }
-            else
-            {
-                foreach (var player in playerList)
-                {
-                    // Calculations first...
-                    var playerRewards = plugin.rewardTracker.rewardList
-                        .Where(e => e.player == player);
-                    var rewardCountStr = $"{playerRewards.Count()}";
-                    var totalGil = playerRewards.Select(e => e.value).Sum();
-                    var totalGilStr = $"{totalGil}g";
-                    var taxAmt = (int)Math.Floor(totalGil * (taxRate / 100d));
-                    var taxAmtStr = $"{taxAmt}g";
+                // Start Table
+                var colCount = 5;
+                var tableFlags = ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg;
+                if (!ImGui.BeginTable("StatementTable", colCount, tableFlags))
+                    return;
 
-                    // ...Display later!
-                    ImGui.PushStyleColor(ImGuiCol.Button, 0x00000000);
+                // Set Headers
+                ImGui.TableSetupColumn("Player", ImGuiTableColumnFlags.WidthStretch);
+                ImGui.TableSetupColumn("Cnt.", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Total", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Keep", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Taxes", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableHeadersRow();
 
+                // Prep vars
+                var playerList = new List<string>();
+                foreach (var key in recordKeeper.userTable.Keys)
+                    playerList.Add((string)key);
+                playerList = playerList.OrderBy(x => x).ToList();
+
+                // Populate Table 
+                if (recordKeeper.rewardList.Count < 1)
+                {
                     ImGui.TableNextRow();
-                    ImGui.TableNextColumn();
-                    if (ImGui.SmallButton(player))
-                        CopyToClipboard(player);
-
-                    ImGui.TableNextColumn();
-                    if (ImGui.SmallButton(rewardCountStr))
-                        CopyToClipboard(rewardCountStr);
-
-                    ImGui.TableNextColumn();
-                    if (ImGui.SmallButton(totalGilStr))
-                        CopyToClipboard(totalGilStr);
-
-                    ImGui.TableNextColumn();
-                    if (ImGui.SmallButton(taxAmtStr))
-                        CopyToClipboard(taxAmtStr);
-
-                    ImGui.PopStyleColor();
+                    for (var i = 0; i < colCount; i++)
+                    {
+                        ImGui.TableNextColumn();
+                        ImGui.Text("---");
+                    }
                 }
-            }
-            ImGui.EndTable();
-        }
-
-        private void CopyToClipboard(string text)
-        {
-            ImGui.SetClipboardText(text);
-            Services.Chat.Print($"[GT] \"{text}\" copied to clipboard.");
-        }
-
-        private void CopyDistinctRewards()
-        {
-            // Get a list of unique events
-            var distinctEvents = plugin.rewardTracker.rewardList
-                .DistinctBy(e => e.timestamp)
-                .ToList();
-
-            // Format our string
-            string valueStr = "";
-            foreach (var record in distinctEvents)
-            {
-                valueStr += record.value.ToString();
-                if (copyTimestamps)
-                    valueStr += "\t" + record.timestamp.ToString();
-                valueStr += "\n";
-            }
-
-            // Copy to clipboard
-            ImGui.SetClipboardText(valueStr);
-
-            // Log in chat
-            var devCnt = distinctEvents.Count;
-            Services.Chat.Print($"Copied list of {devCnt} entries to the clipboard!");
-        }
-
-        public void _OldDraw()
-        {
-            // Get dimensions
-            var windowSize = ImGui.GetContentRegionAvail();
-
-            // Label
-            ImGui.AlignTextToFramePadding();
-            ImGui.Text("Player:");
-            ImGui.SameLine();
-
-            // Draw combobox
-            ImGui.PushItemWidth(300);
-            if (ImGui.BeginCombo("##NameCombo", curName ?? SelectPlayer))
-            {
-                // If no player selected...
-                if (ImGui.Selectable(SelectPlayer, curName == null))
-                    curName = null;
-
-                // Add each player
-                foreach (string player in recordKeeper.userTable.Keys)
+                else
                 {
-                    if (ImGui.Selectable(player, curName == player))
-                        curName = player;
+                    // We have to append a hidden index to each button, otherwise the
+                    // UI only responds to clicks on the first instance of a str
+                    var index = 0;
+
+                    foreach (var player in playerList)
+                    {
+                        // Calculations first...
+                        var playerRewards = plugin.rewardTracker.rewardList
+                            .Where(e => e.player == player);
+                        var rewardCountStr = $"{playerRewards.Count()}";
+                        var totalGil = playerRewards.Select(e => e.value).Sum();
+                        var totalGilStr = $"{totalGil}g";
+                        var taxAmt = (int)Math.Floor(totalGil * (taxRate / 100d));
+                        var taxAmtStr = $"{taxAmt}g";
+                        var takeAmt = totalGil - taxAmt;
+                        var takeAmtStr = $"{takeAmt}g";
+
+                        ImGui.TableNextRow();
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable($"{player}##{index}"))
+                            Utils.CopyToClipboard(player);
+
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable($"{rewardCountStr}##{index}"))
+                            Utils.CopyToClipboard(rewardCountStr);
+
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable($"{totalGilStr}##{index}"))
+                            Utils.CopyToClipboard(totalGilStr);
+
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable($"{takeAmtStr}##{index}"))
+                            Utils.CopyToClipboard(takeAmtStr);
+
+                        ImGui.TableNextColumn();
+                        if (ImGui.Selectable($"{taxAmtStr}##{index}"))
+                            Utils.CopyToClipboard(taxAmtStr);
+
+                        index++;
+                    }
                 }
-
-                ImGui.EndCombo();
+                ImGui.EndTable();
+                ImGui.EndChild();
             }
 
-            // Tax Rate
-            ImGui.SameLine(windowSize.X - 150);
-            ImGui.PushItemWidth(100);
-            ImGui.InputInt("Tax Rate", ref this.taxRate);
-
-            // Separator
+            // Extra Hint
             ImGui.Separator();
-
-            // If no user selected, display text
-            if (curName == null)
-            {
-                ImGui.Text("Select a user above to see their report!");
-                return;
-            }
-
-            // Aggregate all rewards
-            var playerRewards = plugin.rewardTracker.rewardList
-                .Where(e => e.player == curName);
-            ImGui.Text($"Total Reward count: {playerRewards.Count()}");
-
-            // Sum up value
-            var totalGil = playerRewards
-                .Select(e => e.value)
-                .Sum();
-            ImGui.Text($"Total gil: {totalGil}g");
-
-            // Spacer
-            ImGui.Text($"---");
-
-            // Print Tax Rate
-            ImGui.Text($"Tax Rate: {taxRate}%%");
-
-
-            // Determine Taxes
-            double taxPct = taxRate / 100d;
-            
-            var taxAmt = (int)Math.Floor(totalGil * taxPct);
-            ImGui.Text($"Amount owed: {taxAmt}g");
-            ImGui.Text($"Takehome: {totalGil - taxAmt}g");
+            ImGui.TextDisabled("Clicking on any value will copy it to your clipboard!");
         }
     }
 }
