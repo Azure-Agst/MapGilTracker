@@ -66,13 +66,27 @@ namespace MapGilTracker.Windows.Tabs
                 if (taxRate > 100) taxRate = 100; 
                 ImGui.Separator();
 
-                // Other Stats
+                // Total number of tracked players
                 ImGui.Text($"# of Tracked Participants: {recordKeeper.userTable.Count}");
                 int totalEarnings = recordKeeper.rewardList.Select(e => e.value).Sum();
-                ImGui.Text($"Total amount earned: {totalEarnings}");
-                int avgEarned = recordKeeper.userTable.Count > 0 ?
+
+                // Total amount of gil earned by all players
+                ImGui.Text($"Total gil earned: {totalEarnings}g");
+
+                // Average Gross Income
+                int grossPlAvg = recordKeeper.userTable.Count > 0 ?
                     (int)Math.Floor(totalEarnings / (double)recordKeeper.userTable.Count) : 0;
-                ImGui.Text($"Avg amount earned: {avgEarned}");
+                ImGui.Text($"Gross avg. earned: {grossPlAvg}g");
+                ImGui.SameLine(); ImGui.TextDisabled("(?)");
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Average amount earned per\nplayer, before expenses are\ncalculated.");
+
+                // Average Net Income
+                int netPlAvg = (int)(grossPlAvg * ((100-taxRate) / 100d));
+                ImGui.Text($"Net avg. earned: {netPlAvg}g");
+                ImGui.SameLine(); ImGui.TextDisabled("(?)");
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Average amount earned per\nplayer, after expenses are\ncalculated.");
 
                 ImGui.EndChild();
             }
@@ -98,8 +112,8 @@ namespace MapGilTracker.Windows.Tabs
                 ImGui.TableSetupColumn("Player", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("Cnt.", ImGuiTableColumnFlags.WidthFixed);
                 ImGui.TableSetupColumn("Total", ImGuiTableColumnFlags.WidthFixed);
-                ImGui.TableSetupColumn("Keep", ImGuiTableColumnFlags.WidthFixed);
-                ImGui.TableSetupColumn("Taxes", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Keeps", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Owes", ImGuiTableColumnFlags.WidthFixed);
                 ImGui.TableHeadersRow();
 
                 // Prep vars
