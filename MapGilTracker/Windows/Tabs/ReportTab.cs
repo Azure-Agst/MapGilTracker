@@ -22,7 +22,6 @@ namespace MapGilTracker.Windows.Tabs
 
         private MapGilTracker plugin;
         private RewardRecordKeeper recordKeeper;
-        private string? curName = null;
         private int taxRate = 50;
 
         public ReportTab(MainWindow mainWindow) {
