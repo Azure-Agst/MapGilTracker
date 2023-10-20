@@ -1,0 +1,43 @@
+# =============================== #
+# bump_remind.yml                 #
+# Automate version bump reminders #
+# =============================== #
+
+# Name
+name: Bump Version Reminder
+
+#
+# ===== [ Triggers ] ===========================================================
+#
+
+# Reasoning:
+#   We want the reminder to be commented on PRs against master
+
+on:
+  pull_request_target:
+    types:
+      - opened
+    branches:
+      - master
+
+#
+# ===== [ Jobs ] ==============================================================
+#
+
+jobs:
+
+  # 1.) Add Comment
+  apply-label:
+    runs-on: ubuntu-latest
+    steps:
+
+      # 1.1) Add Comment
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: 'We've detected a PR against master! Is this a version bump? If so, check to make sure that the *.csproj is up to date before merging.'
+            })
