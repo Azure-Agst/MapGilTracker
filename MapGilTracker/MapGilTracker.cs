@@ -10,6 +10,10 @@ using MapGilTracker.Models;
 using MapGilTracker.Windows;
 using MapGilTracker.Tools;
 using System;
+using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Game.Text;
+using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace MapGilTracker
 {
@@ -18,6 +22,11 @@ namespace MapGilTracker
         public string Name => "FATE/Map Gil Tracker";
         public string[] mainCmdAliases = { "/giltracker", "/gt" };
         public string[] toggleCmdAliases = { "/gttoggle" };
+
+        public static string rgxPattern = @"You obtain (\d+) gil\.";
+        public Regex gilRegex = new Regex(rgxPattern);
+        public int gilOnDeck = 0;
+
         public bool isLoggedIn {
             get {
                 return Services.ClientState.LocalPlayer != null;
@@ -76,6 +85,7 @@ namespace MapGilTracker
 
             // Add our login/logout handlers
             Services.ClientState.Login += OnLogin;
+            Services.Chat.ChatMessage += OnChatMsg;
 
             // If plugin is loaded while player is logged in, go ahead and run
             if (Services.ClientState.LocalPlayer != null)
@@ -105,6 +115,22 @@ namespace MapGilTracker
 #endif
         }
 
+        private void OnChatMsg(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled)
+        {
+            // If we get a message in the Loot Notices channel...
+            if ((int)type == 2110) {
+
+                // ... See if it's gil and if so, stash the value
+                var r = gilRegex.Match(message.ToString());
+                if (r.Success)
+                {
+                    var gilStr = gilRegex.Match(message.ToString()).Groups[1].ToString();
+                    gilOnDeck = int.Parse(gilStr, NumberStyles.AllowThousands);
+                    Services.Log.Debug($"chat: gilOnDeck = {gilOnDeck}");
+                }
+            }
+        }
+
         private unsafe void OnFatePostSetup(AddonEvent type, AddonArgs args)
         {
             // Log that we detected a FateReward popup
@@ -117,6 +143,17 @@ namespace MapGilTracker
             // node IDs were found via trial and error using Dalamud's built in addon explorer tool
             var fateRewardAddon = (AtkUnitBase*)args.Addon;
             var gil = Utils.GetIntFromFateReward(fateRewardAddon);
+
+            // Ensure that this gil was actually given to us, and isn't just a duplicate popup
+            // We "consume" gilOnDeck regardless of what happens here
+            Services.Log.Debug($"addon pre-con: gilOnDeck = {gilOnDeck}");
+            int tempGilVal = gilOnDeck; gilOnDeck = 0;
+            if (tempGilVal != gil)
+            {
+                Services.Log.Warning("Chat/FateReward Desync detected!");
+                return;
+            }
+            Services.Log.Debug($"addon post-con: gilOnDeck = {gilOnDeck}");
 
             // Get current time
             var curTime = DateTime.Now;
@@ -138,7 +175,7 @@ namespace MapGilTracker
             config.Save();
 
             // Toast me
-            Services.ToastGui.ShowNormal($"GT: Recorded reward of {gil}g!");
+            Services.Chat.Print($"[GT] Recorded {gil}g!");
         }
     }
 }
