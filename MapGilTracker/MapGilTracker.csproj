@@ -5,7 +5,7 @@
   <PropertyGroup>
     <Authors>Azure-Agst</Authors>
     <Company></Company>
-    <Version>0.0.0.2</Version>
+    <Version>0.0.0.3</Version>
     <Description>A Plugin to track gil earned from FATEs or Treasure Maps!</Description>
     <Copyright></Copyright>
     <PackageProjectUrl>https://github.com/Azure-Agst/MapGilTracker</PackageProjectUrl>
