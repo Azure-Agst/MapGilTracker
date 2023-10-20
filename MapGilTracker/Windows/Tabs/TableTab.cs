@@ -80,12 +80,18 @@ namespace MapGilTracker.Windows.Tabs
 
                 // Set Headers
                 ImGui.TableSetupColumn("Timestamp", ImGuiTableColumnFlags.WidthFixed);
-                ImGui.TableSetupColumn("Participant", ImGuiTableColumnFlags.WidthFixed);
+                ImGui.TableSetupColumn("Players", ImGuiTableColumnFlags.WidthFixed);
                 ImGui.TableSetupColumn("Amount", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableHeadersRow();
 
+                // Get the most recent distinct events
+                var sortedRewardList = plugin.rewardTracker.rewardList
+                    .DistinctBy(e => e.timestamp)
+                    .OrderBy(e => e.timestamp)
+                    .ToList();
+
                 // Populate Table 
-                if (recordKeeper.rewardList.Count < 1)
+                if (sortedRewardList.Count < 1)
                 {
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
@@ -101,8 +107,17 @@ namespace MapGilTracker.Windows.Tabs
                     // UI only responds to clicks on the first instance of a str
                     var index = 0;
 
-                    foreach (var entry in recordKeeper.rewardList)
+                    foreach (var entry in sortedRewardList)
                     {
+                        // Get Player List
+                        var curEventPlayers = plugin.rewardTracker.rewardList
+                            .FindAll(e => e.timestamp == entry.timestamp)
+                            .Select(e => e.player)
+                            .OrderBy(e => e)
+                            .ToList();
+                        var curEvtPlrCnt = curEventPlayers.Count().ToString();
+                        var curEvtPlrStr = string.Join(",\n", curEventPlayers);
+
                         // Set up vars
                         var tsStr = entry.timestamp.ToString();
                         var gilStr = $"{entry.value}g";
@@ -113,8 +128,10 @@ namespace MapGilTracker.Windows.Tabs
                             Utils.CopyToClipboard(tsStr);
 
                         ImGui.TableNextColumn();
-                        if (ImGui.Selectable($"{entry.player}##Nme{index}"))
-                            Utils.CopyToClipboard(entry.player ?? "");
+                        if (ImGui.Selectable($"{curEvtPlrCnt}##Nme{index}"))
+                            Utils.CopyToClipboard(curEvtPlrCnt);
+                        if (ImGui.IsItemHovered())
+                            ImGui.SetTooltip(curEvtPlrStr);
 
                         ImGui.TableNextColumn();
                         if (ImGui.Selectable($"{gilStr}##Gil{index}"))
