@@ -14,6 +14,7 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using System.Runtime.Caching;
 
 namespace MapGilTracker
 {
@@ -25,13 +26,15 @@ namespace MapGilTracker
 
         public static string rgxPattern = @"You obtain ([\d,]+) gil\.";
         public Regex gilRegex = new Regex(rgxPattern);
-        public int gilOnDeck = 0;
 
         public bool isLoggedIn {
             get {
                 return Services.ClientState.LocalPlayer != null;
             }
         }
+
+        public TimedList<int> chatGilKeeper = new TimedList<int>(10);
+        public TimedList<int> fateGilKeeper = new TimedList<int>(10);
 
         public RewardRecordKeeper rewardTracker { get; set; }
         public Configuration config { get; set; }
@@ -119,23 +122,39 @@ namespace MapGilTracker
         {
             // If we get a message in either of the Loot Notices channels...
             // NOTE: FATE gil is logged in normal 2110 loot channel. Chests are logged in 62, for some reason.
-            if ((int)type == 2110 || (int)type == 62) {
+            if (message.ToString().Contains("gil"))
+                Services.Log.Debug($"Chat: [{type}] {message}");
+            if (!((int)type == 2110 || (int)type == 62)) return;
 
-                // ... See if it's gil and if so, stash the value
-                var r = gilRegex.Match(message.ToString());
-                if (r.Success)
-                {
-                    var gilStr = gilRegex.Match(message.ToString()).Groups[1].ToString();
-                    gilOnDeck = int.Parse(gilStr, NumberStyles.AllowThousands);
-                    Services.Log.Debug($"chat: gilOnDeck = {gilOnDeck}");
-                }
+            // ... See if it's gil and if so, stash the value
+            var r = gilRegex.Match(message.ToString());
+            if (!r.Success) return;
+
+            // Get gil value
+            var gilStr = gilRegex.Match(message.ToString()).Groups[1].ToString();
+            var gilValue = int.Parse(gilStr, NumberStyles.AllowThousands);
+
+            // See if we have a value in the other list.
+            // If so, remove from other list and process
+            // If not, add gil value to this list
+            var i = fateGilKeeper.Contains(gilValue);
+            if (i == null)
+            {
+                Services.Log.Debug($"Chat: No Match Found, Adding {gilValue} to TimedList!");
+                chatGilKeeper.Add(gilValue);
+            }
+            else 
+            {
+                Services.Log.Debug($"Chat: Found match for {gilValue}, processing!");
+                fateGilKeeper.Remove(i);
+                AddGilRecord(gilValue);
             }
         }
 
         private unsafe void OnFatePostSetup(AddonEvent type, AddonArgs args)
         {
             // Log that we detected a FateReward popup
-            Services.Log.Debug("Fate Popup Detected!");
+            Services.Log.Debug($"FATE: [{type}] Popup Detected!");
 
             // If not tracking, just exit.
             if (!config.isTracking) return;
@@ -143,19 +162,27 @@ namespace MapGilTracker
             // Work our way down to the text box that we need. Note that these hardcoded
             // node IDs were found via trial and error using Dalamud's built in addon explorer tool
             var fateRewardAddon = (AtkUnitBase*)args.Addon;
-            var gil = Utils.GetIntFromFateReward(fateRewardAddon);
+            var gilValue = Utils.GetIntFromFateReward(fateRewardAddon);
 
-            // Ensure that this gil was actually given to us, and isn't just a duplicate popup
-            // We "consume" gilOnDeck regardless of what happens here
-            Services.Log.Debug($"addon pre-con: gilOnDeck = {gilOnDeck}");
-            int tempGilVal = gilOnDeck; gilOnDeck = 0;
-            if (tempGilVal != gil)
+            // See if we have a value in the other list.
+            // If so, remove from other list and process
+            // If not, add gil value to this list
+            var i = chatGilKeeper.Contains(gilValue);
+            if (i == null)
             {
-                Services.Log.Warning("Chat/FateReward Desync detected!");
-                return;
+                Services.Log.Debug($"FATE: No Match Found, Adding {gilValue} to TimedList!");
+                fateGilKeeper.Add(gilValue);
             }
-            Services.Log.Debug($"addon post-con: gilOnDeck = {gilOnDeck}");
+            else
+            {
+                Services.Log.Debug($"FATE: Found match for {gilValue}, processing!");
+                chatGilKeeper.Remove(i);
+                AddGilRecord(gilValue);
+            }
+        }
 
+        private void AddGilRecord(int gilAmt)
+        {
             // Get current time
             var curTime = DateTime.Now;
 
@@ -164,19 +191,19 @@ namespace MapGilTracker
             if (Services.PartyList.Count == 0)
             {
                 var playerName = Services.ClientState.LocalPlayer!.Name.ToString();
-                rewardTracker.AddRecord(gil, playerName, curTime);
+                rewardTracker.AddRecord(gilAmt, playerName, curTime);
             }
             else
             {
                 foreach (var player in Services.PartyList)
-                    rewardTracker.AddRecord(gil, player.Name.ToString(), curTime);
+                    rewardTracker.AddRecord(gilAmt, player.Name.ToString(), curTime);
             }
 
             // Save config
             config.Save();
 
             // Toast me
-            Services.Chat.Print($"[GT] Recorded {gil}g!");
+            Services.Chat.Print($"[GT] Recorded {gilAmt}g!");
         }
     }
 }
