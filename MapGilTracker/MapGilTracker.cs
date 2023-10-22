@@ -23,7 +23,7 @@ namespace MapGilTracker
         public string[] mainCmdAliases = { "/giltracker", "/gt" };
         public string[] toggleCmdAliases = { "/gttoggle" };
 
-        public static string rgxPattern = @"You obtain (\d+) gil\.";
+        public static string rgxPattern = @"You obtain ([\d,]+) gil\.";
         public Regex gilRegex = new Regex(rgxPattern);
         public int gilOnDeck = 0;
 
@@ -117,8 +117,9 @@ namespace MapGilTracker
 
         private void OnChatMsg(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled)
         {
-            // If we get a message in the Loot Notices channel...
-            if ((int)type == 2110) {
+            // If we get a message in either of the Loot Notices channels...
+            // NOTE: FATE gil is logged in normal 2110 loot channel. Chests are logged in 62, for some reason.
+            if ((int)type == 2110 || (int)type == 62) {
 
                 // ... See if it's gil and if so, stash the value
                 var r = gilRegex.Match(message.ToString());
