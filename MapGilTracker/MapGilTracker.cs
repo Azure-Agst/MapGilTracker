@@ -14,7 +14,6 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
-using System.Runtime.Caching;
 
 namespace MapGilTracker
 {
