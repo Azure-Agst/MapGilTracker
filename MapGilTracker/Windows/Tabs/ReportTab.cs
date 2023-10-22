@@ -18,8 +18,6 @@ namespace MapGilTracker.Windows.Tabs
         public string TabName => "Summary";
         public bool Enabled => true;
 
-        private const string SelectPlayer = "Select Player";
-
         private MapGilTracker plugin;
         private RewardRecordKeeper recordKeeper;
         private int taxRate = 50;

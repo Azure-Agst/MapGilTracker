@@ -34,7 +34,8 @@ namespace MapGilTracker.Windows
             tabs = new List<ITabItem>()
             {
                 new TableTab(this),
-                new ReportTab(this)
+                new ReportTab(this),
+                new InfoTab(this)
             };
         }
 
