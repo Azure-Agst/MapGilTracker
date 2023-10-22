@@ -87,7 +87,7 @@ namespace MapGilTracker.Windows.Tabs
                 // Get the most recent distinct events
                 var sortedRewardList = plugin.rewardTracker.rewardList
                     .DistinctBy(e => e.timestamp)
-                    .OrderBy(e => e.timestamp)
+                    .OrderByDescending(e => e.timestamp)
                     .ToList();
 
                 // Populate Table 
