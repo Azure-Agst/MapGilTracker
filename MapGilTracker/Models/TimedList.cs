@@ -53,9 +53,7 @@ namespace MapGilTracker.Models
 
         public void Remove(TimedListItem<T> item)
         {
-            Services.Log.Debug($"Removing Item: {item.value}!");
             itemList.Remove(item);
-            Services.Log.Debug($"New len: {Count}!");
         }
 
         public TimedListItem<T>? Contains(T target)
@@ -83,7 +81,6 @@ namespace MapGilTracker.Models
                     i--; count++;
                 }
             }
-            Services.Log.Debug($"Purged {count} items!");
             return count;
         }
 
