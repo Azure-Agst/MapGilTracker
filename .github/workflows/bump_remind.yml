@@ -27,7 +27,7 @@ on:
 jobs:
 
   # 1.) Add Comment
-  apply-label:
+  bump-remind:
     runs-on: ubuntu-latest
     steps:
 
@@ -39,5 +39,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: 'We've detected a PR against master! Is this a version bump? If so, check to make sure that the *.csproj is up to date before merging.'
+              body: "We've detected a PR against master! Is this a version bump? If so, check to make sure that the *.csproj is up to date before merging."
             })
