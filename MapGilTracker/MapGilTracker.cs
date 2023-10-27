@@ -34,6 +34,7 @@ namespace MapGilTracker
 
         public TimedList<int> chatGilKeeper = new TimedList<int>(10);
         public TimedList<int> fateGilKeeper = new TimedList<int>(10);
+        public bool skipNextGilChat = false;
 
         public RewardRecordKeeper rewardTracker { get; set; }
         public Configuration config { get; set; }
@@ -119,13 +120,33 @@ namespace MapGilTracker
 
         private void OnChatMsg(XivChatType type, uint senderId, ref SeString sender, ref SeString message, ref bool isHandled)
         {
-            // If we get a message in either of the Loot Notices channels...
+            // Ensure message is in one of our tracked channels...
             // NOTE: FATE gil is logged in normal 2110 loot channel. Chests are logged in 62, for some reason.
-            if (message.ToString().Contains("gil"))
-                Services.Log.Debug($"Chat: [{type}] {message}");
-            if (!((int)type == 2110 || (int)type == 62)) return;
+            //       SystemMessages are used exclusively for Challenge Log Entries
+            if (!((int)type == 2110 || (int)type == 62 || type == XivChatType.SystemMessage)) return;
 
-            // ... See if it's gil and if so, stash the value
+            // Log if needed
+            var lower_msg = message.ToString().ToLower();
+            if (lower_msg.Contains("gil") || lower_msg.Contains("challenge"))
+                Services.Log.Debug($"Chat: [{type}] {message}");
+
+            // If is a challenge reward, skip.
+            if (skipNextGilChat)
+            {
+                Services.Log.Debug($"Skipping Challenge Reward!");
+                skipNextGilChat = false;
+                return;
+            }
+
+            // If we just completed a challenge, we want to mark to ignore the next gil value
+            if (type == XivChatType.SystemMessage && lower_msg.Contains("challenge") && lower_msg.Contains("complete"))
+            {
+                skipNextGilChat = true;
+                return;
+            }
+
+            // See if it's gil and if so, stash the value
+            // Everything after these 2 lines operates under the assumption that it is.
             var r = gilRegex.Match(message.ToString());
             if (!r.Success) return;
 
