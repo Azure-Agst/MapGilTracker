@@ -20,7 +20,19 @@ This plugin aims to simplify reward tracking for FCs who use FATEs/Maps as fundr
 
 ## Installation
 
-This plugin is pending approval for being added to the main Dalamud repo. In the meantime, all builds will be hosted on my personal third-party repo. You can find that repo by clicking [here][AzureDalamudRepo] or on the repo badge above.
+As of writing, this plugin is still in testing and not yet available on the general Dalamud plugin repo. That said, there are two ways you can install test builds onto your client.
+
+### Dalamud Testing Repo - Public Betas
+
+As of now, the most official method of installation is via Dalamud's testing channel. Versions distributed via this method are reviewed, tested, and approved by the Dalamud devs, but there still might be some bugs in your experience.
+
+To install a public beta, open the Dalamud Plugin Installer's settings, and under the "Experimental" tab, enable testing builds. After saving, closing, then reopening the installer, the plugin should now be visible in the new "Testing Available" section of the sidebar.
+
+### Third-Party Repo - Public Alphas
+
+If you feel like living on the edge and would like to test new features the second they become available, you can install the public alpha via my third-party repo. Versions distributed via this method are generally tested by myself, but because they're only reviewed by one person, are bound to be buggy and may potentially crash your game. Tread lightly!
+
+You can find the page for my repo, which contains instructions on how to use it, [here][AzureDalamudRepo] or by clicking on the repo card below.
 
 [![Card](https://github-readme-stats.vercel.app/api/pin?username=azure-agst&repo=DalamudRepo&title_color=fff&icon_color=f9f9f9&theme=dark)][AzureDalamudRepo]
 
