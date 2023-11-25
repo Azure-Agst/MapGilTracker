@@ -75,6 +75,13 @@ jobs:
             const label_name = "version-conflict";
             const conflict = ${{ steps.check-vers.outputs.conflict }};
 
+            // If asked to skip, skip
+            const issue = github.rest.issues.get({owner, repo, issue_number: number})
+            if (issue.data.body.includes("Skip version check")) {
+              console.log("Version check skip requested! Exiting...")
+              return;
+            }
+            
             // Make label if doesn't exist
             try {
               await github.rest.issues.getLabel({owner, repo, 
