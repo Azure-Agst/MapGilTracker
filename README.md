@@ -49,6 +49,23 @@ In order to set up a development environment to work on this plugin, perform the
 
 ## Contributions
 
-Sure, I guess? Simply open a PR and I can work with you to merge in whatever features/fixes you want to add.
+Contributions are welcome! I respectfully ask that you follow the contribution guidelines for this project, located in [CONTRIBUTING.md](./CONTRIBUTING.md). Here's the TL;DR:
+
+- Pull Requests should be opened against `develop`. Any PRs opened against `master` will be denied.
+- If adding a feature, name your branch using the following pattern: `f/[short-name]`.
+- If patching a bug, name your branch using the following pattern: `b/[issue-#]-[short-name]`.
+  - If there is no issue associated with the bug you're fixing, please open one before submitting your PR.
+
+## License
+
+Distributed under the GNU General Public License v3.0 license. See [LICENSE.md](./LICENSE.md) for more details.
+
+## Acknowledgements
+
+I'd like to say thanks to a few people/teams who have made developing this project a very rewarding experience!
+
+- The Dalamud Team - For making and maintaining the Dalamud project, and also being helpful throughout the entire development process
+- Azure Infinitum - My FC, who gave me the idea to start this project
+- MajorPainOG - For being my primary tester and for helping me design much of this plugin
 
 [AzureDalamudRepo]: https://github.com/Azure-Agst/DalamudRepo
