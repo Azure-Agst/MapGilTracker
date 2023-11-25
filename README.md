@@ -4,6 +4,7 @@
 
 [![Dynamic XML Badge](https://img.shields.io/badge/dynamic/xml?url=https%3A%2F%2Fraw.githubusercontent.com%2FAzure-Agst%2FMapGilTracker%2Fmaster%2FMapGilTracker%2FMapGilTracker.csproj&query=%2F%2FProject%2FPropertyGroup%2FVersion&label=Version&color=blue)](https://github.com/Azure-Agst/MapGilTracker/releases/latest)
 [![License](https://img.shields.io/github/license/Azure-Agst/MapGilTracker)](https://github.com/Azure-Agst/MapGilTracker/blob/master/LICENSE.md)
+[![GitHub Workflow Status (with event)](https://img.shields.io/github/actions/workflow/status/Azure-Agst/MapGilTracker/build_plugin.yml)](https://github.com/Azure-Agst/MapGilTracker/actions/workflows/build_plugin.yml)
 [![Dalamud Repo](https://img.shields.io/badge/Dalamud_Repo-Third_Party-992c31)][AzureDalamudRepo]
 
 
