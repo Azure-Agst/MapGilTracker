@@ -1,0 +1,138 @@
+# =============================== #
+# build_releases.yml              #
+# Automate building and deploying #
+# =============================== #
+
+# Name
+name: Build Plugin
+
+#
+# ===== [ Triggers ] ===========================================================
+#
+
+# Reasoning:
+#   Every time we merge to master, we want to try and build
+
+on:
+  push:
+    branches:
+      - 'master'
+  workflow_dispatch:
+
+#
+# ===== [ Jobs ] ==============================================================
+#
+
+env:
+  PLUGIN_NAME: MapGilTracker
+  PLUGIN_DIR: MapGilTracker
+  PLUGIN_CSPROJ: MapGilTracker.csproj
+  DALAMUD_LATEST: https://github.com/goatcorp/dalamud-distrib/raw/main/latest.zip
+
+jobs:
+
+  # 1.) Check Version
+  check-version:
+    name: Check Version
+    runs-on: ubuntu-latest
+    steps:
+
+      # 1.1) Checkout Repo
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      
+      # 1.2) Check Version
+      - name: Check Version
+        id: check-vers
+        run: |
+          # Parse Tags
+          LOCAL_VER="v$(cat $PLUGIN_DIR/$PLUGIN_CSPROJ | grep -oPm1 '(?<=<Version>)[^<]+')"
+          REMOTE_VER=$(curl -s https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest | jq -r .tag_name)
+
+          # Compare
+          [ "$REMOTE_VER" = "$LOCAL_VER" ] && CONFLICT=true || CONFLICT=false
+
+          # Log
+          echo "Local Version: $LOCAL_VER"
+          echo "Remote Version: $REMOTE_VER"
+          echo "Conflict exists? $CONFLICT"
+
+          # Write outputs
+          echo version=$LOCAL_VER >> $GITHUB_OUTPUT
+          echo conflict=$CONFLICT >> $GITHUB_OUTPUT
+    
+    # 1.3) Set outputs for step 2
+    outputs:
+      version: ${{ steps.check-vers.outputs.version }}
+      conflict: ${{ steps.check-vers.outputs.conflict }}
+
+  # 2.) Build Plugin
+  build-plugin:
+    name: Build Plugin
+    runs-on: ubuntu-latest
+
+    # NOTE: Grant perms to make a release
+    permissions:
+      contents: write
+
+    # NOTE: Only run if needed
+    needs: check-version
+    if: needs.check-version.outputs.conflict == 'false'
+
+    steps:
+
+      # 2.1) Checkout Repo
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      # 2.2) Setup .NET w/ Cache
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: "7.0.x"
+          cache: true
+          cache-dependency-path: |
+            ${{ env.PLUGIN_DIR }}/packages.lock.json
+
+      # 2.3) Setup Dalamud
+      - name: Setup Dalamud
+        run: |
+          # Set up files
+          DALAMUD_DIR=/usr/share/dalamud
+          ZIP_PATH="$(mktemp 'dalamud.zip.XXXXXX')"
+
+          # Download Dalamud
+          echo "Attempting to download Dalamud from $DALAMUD_LATEST"
+          curl -sL $DALAMUD_LATEST -o $ZIP_PATH
+
+          # Unzip Dalamud
+          echo "Extracting zip from $DALAMUD_LATEST"
+          mkdir $DALAMUD_DIR && unzip -q $ZIP_PATH -d $DALAMUD_DIR
+
+          # Verify info from dependencies file
+          DALAMUD_VERS=$(grep -m 1 -oP 'Dalamud/\K([\d.]*)' $DALAMUD_DIR/Dalamud.deps.json)
+          echo "Installed version $DALAMUD_VERS into location $DALAMUD_DIR"
+
+          # Export env vars
+          echo DALAMUD_HOME=$DALAMUD_DIR >> $GITHUB_ENV
+      
+      # 2.4) Build Plugin
+      - name: Build .NET Project
+        run: dotnet build $PLUGIN_DIR/$PLUGIN_CSPROJ -c Release
+
+      - name: Output test data
+        run: |  
+          ls -laR MapGilTracker
+
+      # 2.5) Create Release w/ Assets
+      # NOTE: Hardcoding these artifacts, do change if reusing
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: "Release ${{ needs.check-version.outputs.version }}"
+          tag_name: ${{ needs.check-version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            MapGilTracker/bin/Release/MapGilTracker/latest.zip
+            MapGilTracker/bin/Release/MapGilTracker/MapGilTracker.json
+            MapGilTracker/bin/Release/MapGilTracker/images/icon.png

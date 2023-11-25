@@ -1,0 +1,132 @@
+# =============================== #
+# bump_checker.yml                #
+# Automate version bump reminders #
+# =============================== #
+
+# Name
+name: Version Bump Checker
+
+#
+# ===== [ Triggers ] ===========================================================
+#
+
+# Reasoning:
+#   We want the reminder to be commented on PRs against master
+
+on:
+  pull_request:
+    branches:
+      - master
+
+#
+# ===== [ Jobs ] ==============================================================
+#
+
+env:
+  PLUGIN_NAME: MapGilTracker
+  PLUGIN_DIR: MapGilTracker
+  PLUGIN_CSPROJ: MapGilTracker.csproj
+
+jobs:
+
+  # 1.) Version Bump Checker
+  bump-checker:
+    name: Main Script
+    runs-on: ubuntu-latest
+
+    # NOTE: Add perms
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+
+      # 1.1) Checkout Repo
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+      
+      # 1.2) Check Version
+      - name: Check Version
+        id: check-vers
+        run: |
+          # Parse Tags
+          LOCAL_VER="v$(cat $PLUGIN_DIR/$PLUGIN_CSPROJ | grep -oPm1 '(?<=<Version>)[^<]+')"
+          REMOTE_VER=$(curl -s https://api.github.com/repos/$GITHUB_REPOSITORY/releases/latest | jq -r .tag_name)
+
+          # Compare
+          [ "$REMOTE_VER" = "$LOCAL_VER" ] && CONFLICT=true || CONFLICT=false
+
+          # Log
+          echo "Local Version: $LOCAL_VER"
+          echo "Remote Version: $REMOTE_VER"
+          echo "Conflict exists? $CONFLICT"
+
+          # Write outputs
+          echo version=$LOCAL_VER >> $GITHUB_OUTPUT
+          echo conflict=$CONFLICT >> $GITHUB_OUTPUT
+
+      # 1.3) Add Comments
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            // Alias vars
+            const { owner, repo } = context.repo;
+            const { number } = context.issue;
+            const label_name = "version-conflict";
+            const conflict = ${{ steps.check-vers.outputs.conflict }};
+
+            // Make label if doesn't exist
+            try {
+              await github.rest.issues.getLabel({owner, repo, 
+                name: label_name
+              });
+            } catch (error) {
+              console.log("Creating label...")
+              await github.rest.issues.createLabel({owner, repo, 
+                name: label_name, color: "b60205",
+                description: "A version conflict exists within this issue!"
+              });
+            }
+
+            // Get current issue labels
+            const labels = await github.rest.issues.listLabelsOnIssue({owner, repo, issue_number: number});
+            const confictLbl = labels.data.some((l) => l.name == label_name);
+
+            // If recovering from test failure and passed
+            if (confictLbl && !conflict) {
+
+              // Remove label
+              await github.rest.issues.removeLabel({
+                owner, repo,
+                issue_number: number,
+                name: label_name
+              });
+
+              // Add comment
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: number,
+                body: "Version conflict resolved!"
+              });
+
+            // Else if label doesn't exist and we fail
+            } else if (conflict && !confictLbl) {
+
+              // Add label
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number: number,
+                labels: [ label_name ]
+              });
+
+              // Add comment
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: number,
+                body: "A version conflict exists between this branch and main! Please increment and try again."
+              });
+
+            }
+
+            if (conflict) {
+              core.setFailed("A version conflict exists between this branch and main! Please increment and try again.");
+            }
+
+
