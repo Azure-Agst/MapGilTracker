@@ -136,3 +136,19 @@ jobs:
             MapGilTracker/bin/Release/MapGilTracker/latest.zip
             MapGilTracker/bin/Release/MapGilTracker/MapGilTracker.json
             MapGilTracker/bin/Release/MapGilTracker/images/icon.png
+            
+      # 2.6) Notify Devs
+      - name: Notify Devs
+        uses: azuresrv/actions-discord-notifier@v1
+        with:
+          webhook: ${{ secrets.WEBHOOK }}
+          message: Finished building version ${{ needs.check-version.outputs.version }}!
+
+      # 2.7) Repo Rebuild
+      - name: Repo Dispatch
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.PLUGINREPO_PAT }}
+          repository: Azure-Agst/DalamudRepo
+          event-type: rebuild
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
